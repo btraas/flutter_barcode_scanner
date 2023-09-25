@@ -22,6 +22,7 @@ public class SwiftFlutterBarcodeScannerPlugin: NSObject, FlutterPlugin, ScanBarc
     public static var isContinuousScan:Bool=false
     static var barcodeStream:FlutterEventSink?=nil
     public static var scanMode = ScanMode.QR.index
+    public static List<Int>? barcodeTypes = nil
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         viewController = (UIApplication.shared.delegate?.window??.rootViewController)!
@@ -54,6 +55,45 @@ public class SwiftFlutterBarcodeScannerPlugin: NSObject, FlutterPlugin, ScanBarc
     public static func onBarcodeScanReceiver( barcode:String){
         barcodeStream!(barcode)
     }
+
+    private func mapGmsOrdinalsToAvMetadataTypes(_ gmsOrdinals: [Int]) -> [AvMetadataObject.ObjectType] {
+            var output: Set<Int> = []
+            for ordinal in gmsOrdinals {
+                switch gmsOrdinal {
+                case 1:
+                    output.insert(AVMetadataObject.ObjectType.code128)
+                case 2:
+                    output.insert(AVMetadataObject.ObjectType.code39)
+                    output.insert(AVMetadataObject.ObjectType.code39Mod43)
+                case 4:
+                    output.insert(AVMetadataObject.ObjectType.code93)
+                case 8:
+                    output.insert(AVMetadataObject.ObjectType.codabarCode)
+                case 16:
+                    output.insert(AVMetadataObject.ObjectType.dataMatrix)
+                case 32:
+                    output.insert(AVMetadataObject.ObjectType.ean13)
+                case 64:
+                    output.insert(AVMetadataObject.ObjectType.ean8)
+                case 128:
+                    output.insert(AVMetadataObject.ObjectType.itf14)
+                    output.insert(AVMetadataObject.ObjectType.interleaved2of5)
+                case 256:
+                    output.insert(AVMetadataObject.ObjectType.qr)
+                case 512:
+                    output.insert(AVMetadataObject.ObjectType.upce)
+                case 1024:
+                    output.insert(AVMetadataObject.ObjectType.upce)
+                case 2048:
+                    output.insert(AVMetadataObject.ObjectType.pdf417)
+                case 4096:
+                    output.insert(AVMetadataObject.ObjectType.aztec)
+                case 2048:
+                    output.insert(AVMetadataObject.ObjectType.pdf417)
+                }
+            }
+            return output
+        }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         let args:Dictionary<String, AnyObject> = call.arguments as! Dictionary<String, AnyObject>;
@@ -81,15 +121,29 @@ public class SwiftFlutterBarcodeScannerPlugin: NSObject, FlutterPlugin, ScanBarc
         if let scanModeReceived = args["scanMode"] as? Int {
             if scanModeReceived == ScanMode.DEFAULT.index {
                 SwiftFlutterBarcodeScannerPlugin.scanMode = ScanMode.QR.index
-            }else{
+            } else {
                 SwiftFlutterBarcodeScannerPlugin.scanMode = scanModeReceived
             }
         }else{
             SwiftFlutterBarcodeScannerPlugin.scanMode = ScanMode.QR.index
         }
+
+         if let barcodeTypes = args["barcodeTypes"] as? List<Int> {
+            if barcodeTypes.isEmpty {
+                SwiftFlutterBarcodeScannerPlugin.barcodeTypes = nil
+            } else {
+                SwiftFlutterBarcodeScannerPlugin.barcodeTypes = barcodeTypes
+            }
+        } else {
+            SwiftFlutterBarcodeScannerPlugin.barcodeTypes = nil
+        }
         
         pendingResult=result
         let controller = BarcodeScannerViewController()
+        if let barcodeTypes = SwiftFlutterBarcodeScannerPlugin.barcodeTypes {
+            controller.supportedCodeTypes = mapGmsOrdinalsToAvMetadataTypes(barcodeTypes)
+        }
+
         controller.delegate = self
         
         if #available(iOS 13.0, *) {
@@ -146,7 +200,7 @@ protocol ScanBarcodeDelegate {
 }
 
 class BarcodeScannerViewController: UIViewController {
-    private let supportedCodeTypes = [AVMetadataObject.ObjectType.upce,
+    public let supportedCodeTypes = [AVMetadataObject.ObjectType.upce,
                                       AVMetadataObject.ObjectType.code39,
                                       AVMetadataObject.ObjectType.code39Mod43,
                                       AVMetadataObject.ObjectType.code93,
@@ -250,7 +304,8 @@ class BarcodeScannerViewController: UIViewController {
         
         self.initBarcodeComponents()
     }
-    
+
+
     
     // Inititlize components
     func initBarcodeComponents(){

@@ -16,12 +16,16 @@
 package com.amolg.flutterbarcodescanner;
 
 import android.content.Context;
+import android.util.Log;
+
 import androidx.annotation.UiThread;
 
 import com.amolg.flutterbarcodescanner.camera.GraphicOverlay;
 import com.google.android.gms.vision.Detector;
 import com.google.android.gms.vision.Tracker;
 import com.google.android.gms.vision.barcode.Barcode;
+
+import java.util.List;
 
 /**
  * Generic tracker which is used for tracking or reading a barcode (and can really be used for
@@ -35,6 +39,8 @@ public class BarcodeGraphicTracker extends Tracker<Barcode> {
 
     private BarcodeUpdateListener mBarcodeUpdateListener;
 
+    private List<Integer> barcodeTypes;
+
     /**
      * Consume the item instance detected from an Activity or Fragment level by implementing the
      * BarcodeUpdateListener interface method onBarcodeDetected.
@@ -44,9 +50,10 @@ public class BarcodeGraphicTracker extends Tracker<Barcode> {
         void onBarcodeDetected(Barcode barcode);
     }
 
-    BarcodeGraphicTracker(GraphicOverlay<BarcodeGraphic> mOverlay, BarcodeGraphic mGraphic, Context context) {
+    BarcodeGraphicTracker(GraphicOverlay<BarcodeGraphic> mOverlay, BarcodeGraphic mGraphic, Context context, List<Integer> barcodeTypes) {
         this.mOverlay = mOverlay;
         this.mGraphic = mGraphic;
+        this.barcodeTypes = barcodeTypes;
         if (context instanceof BarcodeUpdateListener) {
             this.mBarcodeUpdateListener = (BarcodeUpdateListener) context;
         } else {
@@ -59,6 +66,12 @@ public class BarcodeGraphicTracker extends Tracker<Barcode> {
      */
     @Override
     public void onNewItem(int id, Barcode item) {
+
+        if(barcodeTypes != null && !barcodeTypes.isEmpty() && !barcodeTypes.contains(item.format)) {
+            Log.w("BarcodeGraphicTracker", "barcode type " + item.format + " invalid. Skipping");
+            return;
+        }
+
         mGraphic.setId(id);
         mBarcodeUpdateListener.onBarcodeDetected(item);
     }

@@ -14,6 +14,7 @@ import androidx.lifecycle.LifecycleOwner;
 import com.google.android.gms.common.api.CommonStatusCodes;
 import com.google.android.gms.vision.barcode.Barcode;
 
+import java.util.List;
 import java.util.Map;
 
 import io.flutter.embedding.android.FlutterActivity;
@@ -111,6 +112,16 @@ public class FlutterBarcodeScannerPlugin implements MethodCallHandler, ActivityR
                     }
                 } else {
                     BarcodeCaptureActivity.SCAN_MODE = BarcodeCaptureActivity.SCAN_MODE_ENUM.QR.ordinal();
+                }
+
+                if (null != arguments.get("barcodeTypes")) {
+                    if (((List<Integer>)  arguments.get("barcodeTypes")).isEmpty()) {
+                        BarcodeCaptureActivity.BARCODE_TYPES = null; // all
+                    } else {
+                        BarcodeCaptureActivity.BARCODE_TYPES = (List<Integer>) arguments.get("barcodeTypes");
+                    }
+                } else {
+                    BarcodeCaptureActivity.BARCODE_TYPES = null; // all
                 }
 
                 isContinuousScan = (boolean) arguments.get("isContinuousScan");

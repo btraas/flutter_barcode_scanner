@@ -17,10 +17,14 @@ package com.amolg.flutterbarcodescanner;
 
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+
 import com.amolg.flutterbarcodescanner.camera.GraphicOverlay;
 import com.google.android.gms.vision.MultiProcessor;
 import com.google.android.gms.vision.Tracker;
 import com.google.android.gms.vision.barcode.Barcode;
+
+import java.util.List;
 
 /**
  * Factory for creating a tracker and associated graphic to be associated with a new barcode.  The
@@ -30,14 +34,23 @@ class BarcodeTrackerFactory implements MultiProcessor.Factory<Barcode> {
     private GraphicOverlay<BarcodeGraphic> mGraphicOverlay;
     private Context mContext;
 
-    public BarcodeTrackerFactory(GraphicOverlay<BarcodeGraphic> mGraphicOverlay, Context mContext) {
+    private List<Integer> barcodeTypes;
+
+    public BarcodeTrackerFactory(GraphicOverlay<BarcodeGraphic> mGraphicOverlay, Context mContext, List<Integer> barcodeTypes) {
         this.mGraphicOverlay = mGraphicOverlay;
         this.mContext = mContext;
+        this.barcodeTypes = barcodeTypes;
+        int barcodeTypeCount = 0;
+        if (barcodeTypes != null) {
+            barcodeTypeCount = barcodeTypes.size();
+        }
+        System.out.println("init BarcodeTrackerFactory with " + barcodeTypeCount + " barcode types");
     }
 
+    @NonNull
     @Override
-    public Tracker<Barcode> create(Barcode barcode) {
+    public Tracker<Barcode> create(@NonNull Barcode barcode) {
         BarcodeGraphic graphic = new BarcodeGraphic(mGraphicOverlay);
-        return new BarcodeGraphicTracker(mGraphicOverlay, graphic, mContext);
+        return new BarcodeGraphicTracker(mGraphicOverlay, graphic, mContext, barcodeTypes);
     }
 }

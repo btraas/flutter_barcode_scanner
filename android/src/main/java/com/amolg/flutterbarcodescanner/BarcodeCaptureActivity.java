@@ -57,6 +57,7 @@ import com.google.android.gms.vision.barcode.Barcode;
 import com.google.android.gms.vision.barcode.BarcodeDetector;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Activity for the multi-tracker app.  This app detects barcodes and displays the value with the
@@ -86,6 +87,9 @@ public final class BarcodeCaptureActivity extends AppCompatActivity implements B
     private ImageView imgViewSwitchCamera;
 
     public static int SCAN_MODE = SCAN_MODE_ENUM.QR.ordinal();
+
+    // See com.android.gms.vision.barcode.Barcode for constant list
+    public static List<Integer> BARCODE_TYPES = null; // null for all types
 
     public enum SCAN_MODE_ENUM {
         QR,
@@ -208,7 +212,7 @@ public final class BarcodeCaptureActivity extends AppCompatActivity implements B
         // graphics for each barcode on screen.  The factory is used by the multi-processor to
         // create a separate tracker instance for each barcode.
         BarcodeDetector barcodeDetector = new BarcodeDetector.Builder(context).build();
-        BarcodeTrackerFactory barcodeFactory = new BarcodeTrackerFactory(mGraphicOverlay, this);
+        BarcodeTrackerFactory barcodeFactory = new BarcodeTrackerFactory(mGraphicOverlay, this, BARCODE_TYPES);
         barcodeDetector.setProcessor(
                 new MultiProcessor.Builder<>(barcodeFactory).build());
 

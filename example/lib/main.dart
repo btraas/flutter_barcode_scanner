@@ -30,7 +30,7 @@ class _MyAppState extends State<MyApp> {
     // Platform messages may fail, so we use a try/catch PlatformException.
     try {
       barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
-          '#ff6666', 'Cancel', true, ScanMode.QR);
+          '#ff6666', 'Cancel', true, ScanMode.QR, barcodeTypes: {BarcodeType.QR_CODE});
       print(barcodeScanRes);
     } on PlatformException {
       barcodeScanRes = 'Failed to get platform version.';
@@ -47,12 +47,21 @@ class _MyAppState extends State<MyApp> {
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> scanBarcodeNormal() async {
+  Future<void> scanBarcode1D() async {
     String barcodeScanRes;
     // Platform messages may fail, so we use a try/catch PlatformException.
     try {
+      var barcode1DTypes = {
+        BarcodeType.UPC_A,
+        BarcodeType.UPC_E,
+        BarcodeType.CODE_39,
+        BarcodeType.CODE_93,
+        BarcodeType.CODE_128,
+        BarcodeType.EAN_8,
+        BarcodeType.EAN_13
+      };
       barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
-          '#ff6666', 'Cancel', true, ScanMode.BARCODE);
+          '#ff6666', 'Cancel', true, ScanMode.BARCODE, barcodeTypes: barcode1DTypes);
       print(barcodeScanRes);
     } on PlatformException {
       barcodeScanRes = 'Failed to get platform version.';
@@ -81,7 +90,7 @@ class _MyAppState extends State<MyApp> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
                         ElevatedButton(
-                            onPressed: () => scanBarcodeNormal(),
+                            onPressed: () => scanBarcode1D(),
                             child: Text('Start barcode scan')),
                         ElevatedButton(
                             onPressed: () => scanQR(),
