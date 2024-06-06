@@ -22,8 +22,8 @@ public class SwiftFlutterBarcodeScannerPlugin: NSObject, FlutterPlugin, ScanBarc
     public static var isContinuousScan:Bool=false
     static var barcodeStream:FlutterEventSink?=nil
     public static var scanMode = ScanMode.QR.index
-    public static List<Int>? barcodeTypes = nil
-    
+    public static var barcodeTypes: [Int]? = nil
+
     public static func register(with registrar: FlutterPluginRegistrar) {
         viewController = (UIApplication.shared.delegate?.window??.rootViewController)!
         let channel = FlutterMethodChannel(name: "flutter_barcode_scanner", binaryMessenger: registrar.messenger())
@@ -32,69 +32,74 @@ public class SwiftFlutterBarcodeScannerPlugin: NSObject, FlutterPlugin, ScanBarc
         let eventChannel=FlutterEventChannel(name: "flutter_barcode_scanner_receiver", binaryMessenger: registrar.messenger())
         eventChannel.setStreamHandler(instance)
     }
-    
+
     /// Check for camera availability
     func checkCameraAvailability()->Bool{
         return UIImagePickerController.isSourceTypeAvailable(.camera)
     }
-    
+
     func checkForCameraPermission()->Bool{
         return AVCaptureDevice.authorizationStatus(for: .video) == .authorized
     }
-    
+
     public func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
         SwiftFlutterBarcodeScannerPlugin.barcodeStream = events
         return nil
     }
-    
+
     public func onCancel(withArguments arguments: Any?) -> FlutterError? {
         SwiftFlutterBarcodeScannerPlugin.barcodeStream=nil
         return nil
     }
-    
-    public static func onBarcodeScanReceiver( barcode:String){
+
+    public static func onBarcodeScanReceiver(barcode:String){
         barcodeStream!(barcode)
     }
 
-    private func mapGmsOrdinalsToAvMetadataTypes(_ gmsOrdinals: [Int]) -> [AvMetadataObject.ObjectType] {
-            var output: Set<Int> = []
+    private func mapGmsOrdinalsToAvMetadataTypes(_ gmsOrdinals: [Int]) -> [AVMetadataObject.ObjectType] {
+        var output = [AVMetadataObject.ObjectType]()
             for ordinal in gmsOrdinals {
-                switch gmsOrdinal {
+                switch ordinal {
                 case 1:
-                    output.insert(AVMetadataObject.ObjectType.code128)
+                    output.append(AVMetadataObject.ObjectType.code128)
                 case 2:
-                    output.insert(AVMetadataObject.ObjectType.code39)
-                    output.insert(AVMetadataObject.ObjectType.code39Mod43)
+                    output.append(AVMetadataObject.ObjectType.code39)
+                    output.append(AVMetadataObject.ObjectType.code39Mod43)
                 case 4:
-                    output.insert(AVMetadataObject.ObjectType.code93)
+                    output.append(AVMetadataObject.ObjectType.code93)
                 case 8:
-                    output.insert(AVMetadataObject.ObjectType.codabarCode)
+                    if #available(iOS 15.4, *) {
+                        output.append(AVMetadataObject.ObjectType.codabar)
+                    }
                 case 16:
-                    output.insert(AVMetadataObject.ObjectType.dataMatrix)
+                    output.append(AVMetadataObject.ObjectType.dataMatrix)
                 case 32:
-                    output.insert(AVMetadataObject.ObjectType.ean13)
+                    output.append(AVMetadataObject.ObjectType.ean13)
                 case 64:
-                    output.insert(AVMetadataObject.ObjectType.ean8)
+                    output.append(AVMetadataObject.ObjectType.ean8)
                 case 128:
-                    output.insert(AVMetadataObject.ObjectType.itf14)
-                    output.insert(AVMetadataObject.ObjectType.interleaved2of5)
+                    output.append(AVMetadataObject.ObjectType.itf14)
+                    output.append(AVMetadataObject.ObjectType.interleaved2of5)
                 case 256:
-                    output.insert(AVMetadataObject.ObjectType.qr)
+                    output.append(AVMetadataObject.ObjectType.qr)
                 case 512:
-                    output.insert(AVMetadataObject.ObjectType.upce)
+                    output.append(AVMetadataObject.ObjectType.upce)
                 case 1024:
-                    output.insert(AVMetadataObject.ObjectType.upce)
+                    output.append(AVMetadataObject.ObjectType.upce)
                 case 2048:
-                    output.insert(AVMetadataObject.ObjectType.pdf417)
+                    output.append(AVMetadataObject.ObjectType.pdf417)
                 case 4096:
-                    output.insert(AVMetadataObject.ObjectType.aztec)
+                    output.append(AVMetadataObject.ObjectType.aztec)
                 case 2048:
-                    output.insert(AVMetadataObject.ObjectType.pdf417)
+                    output.append(AVMetadataObject.ObjectType.pdf417)
+                default:
+                    print("Unhandled gms ordinal: \(ordinal)")
+                    // do nothing
                 }
             }
             return output
         }
-    
+
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         let args:Dictionary<String, AnyObject> = call.arguments as! Dictionary<String, AnyObject>;
         if let colorCode = args["lineColor"] as? String{
@@ -117,7 +122,7 @@ public class SwiftFlutterBarcodeScannerPlugin: NSObject, FlutterPlugin, ScanBarc
         }else {
             SwiftFlutterBarcodeScannerPlugin.isContinuousScan = false
         }
-        
+
         if let scanModeReceived = args["scanMode"] as? Int {
             if scanModeReceived == ScanMode.DEFAULT.index {
                 SwiftFlutterBarcodeScannerPlugin.scanMode = ScanMode.QR.index
@@ -128,7 +133,7 @@ public class SwiftFlutterBarcodeScannerPlugin: NSObject, FlutterPlugin, ScanBarc
             SwiftFlutterBarcodeScannerPlugin.scanMode = ScanMode.QR.index
         }
 
-         if let barcodeTypes = args["barcodeTypes"] as? List<Int> {
+         if let barcodeTypes = args["barcodeTypes"] as? [Int]? ?? [Int]() {
             if barcodeTypes.isEmpty {
                 SwiftFlutterBarcodeScannerPlugin.barcodeTypes = nil
             } else {
@@ -137,7 +142,7 @@ public class SwiftFlutterBarcodeScannerPlugin: NSObject, FlutterPlugin, ScanBarc
         } else {
             SwiftFlutterBarcodeScannerPlugin.barcodeTypes = nil
         }
-        
+
         pendingResult=result
         let controller = BarcodeScannerViewController()
         if let barcodeTypes = SwiftFlutterBarcodeScannerPlugin.barcodeTypes {
@@ -145,16 +150,16 @@ public class SwiftFlutterBarcodeScannerPlugin: NSObject, FlutterPlugin, ScanBarc
         }
 
         controller.delegate = self
-        
+
         if #available(iOS 13.0, *) {
             controller.modalPresentationStyle = .fullScreen
         }
-        
+
         if checkCameraAvailability(){
             if checkForCameraPermission() {
                 SwiftFlutterBarcodeScannerPlugin.viewController.present(controller
                                                                         , animated: true) {
-                    
+
                 }
             }else {
                 AVCaptureDevice.requestAccess(for: .video) { success in
@@ -162,17 +167,17 @@ public class SwiftFlutterBarcodeScannerPlugin: NSObject, FlutterPlugin, ScanBarc
                         if success {
                             SwiftFlutterBarcodeScannerPlugin.viewController.present(controller
                                                                                     , animated: true) {
-                                
+
                             }
                         } else {
                             let alert = UIAlertController(title: "Action needed", message: "Please grant camera permission to use barcode scanner", preferredStyle: .alert)
-                            
+
                             alert.addAction(UIAlertAction(title: "Grant", style: .default, handler: { action in
                                 UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!)
                             }))
-                            
+
                             alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-                            
+
                             SwiftFlutterBarcodeScannerPlugin.viewController.present(alert, animated: true)
                         }
                     }
@@ -181,11 +186,11 @@ public class SwiftFlutterBarcodeScannerPlugin: NSObject, FlutterPlugin, ScanBarc
             showAlertDialog(title: "Unable to proceed", message: "Camera not available")
         }
     }
-    
+
     public func userDidScanWith(barcode: String){
         pendingResult(barcode)
     }
-    
+
     /// Show common alert dialog
     func showAlertDialog(title:String,message:String){
         let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
@@ -200,7 +205,7 @@ protocol ScanBarcodeDelegate {
 }
 
 class BarcodeScannerViewController: UIViewController {
-    public let supportedCodeTypes = [AVMetadataObject.ObjectType.upce,
+    public var supportedCodeTypes = [AVMetadataObject.ObjectType.upce,
                                       AVMetadataObject.ObjectType.code39,
                                       AVMetadataObject.ObjectType.code39Mod43,
                                       AVMetadataObject.ObjectType.code93,
